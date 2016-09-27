@@ -48,7 +48,7 @@ module.exports = function(grunt) {
   grunt.loadNpmTasks('grunt-browserify');
   grunt.loadNpmTasks('grunt-contrib-qunit');
 
-  grunt.registerTask("default", ["jshint", "uglify", "browserify"]);
+  grunt.registerTask("build", ["jshint", "uglify"]);
   grunt.registerTask("test", ["jshint", "uglify", "browserify", "qunit"]);
 
 };

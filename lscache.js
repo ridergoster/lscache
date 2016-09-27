@@ -41,6 +41,9 @@ var ms = require('ms');
   // expiration date radix (set to Base-36 for most space savings)
   var EXPIRY_RADIX = 10;
 
+  // expiration date
+  var EXPIRE_DATE = 86400;
+
   // ECMAScript max Date (epoch + 1e8 days)
   var MAX_DATE = Math.floor(8.64e15);
 
@@ -188,7 +191,7 @@ var ms = require('ms');
       return true;
     }
   }
-  
+
   function warn(message, err) {
     if (!warnings) return;
     if (!('console' in window) || typeof window.console.warn !== 'function') return;
@@ -237,6 +240,7 @@ var ms = require('ms');
       }
 
       try {
+        this.flushExpired();
         setItem(key, value);
       } catch (e) {
         if (isOutOfSpace(e)) {
@@ -358,6 +362,32 @@ var ms = require('ms');
       eachKey(function(key) {
         flushExpiredItem(key);
       });
+    },
+
+    flushBucketLimit: function(limit) {
+      var storedKeys = [];
+
+      eachKey(function(key, exprKey) {
+        var expiration = getItem(exprKey);
+        if (expiration) {
+          expiration = parseInt(expiration, EXPIRY_RADIX);
+        }
+        else {
+          expiration = MAX_DATE;
+        }
+        if(expiration > currentTime()) {
+          storedKeys.push({
+            key: key,
+            expiration: expiration
+          });
+        }
+      });
+      // Sorts the keys with oldest expiration time last
+      storedKeys.sort(function(a, b) { return (b.expiration-a.expiration); });
+      while(storedKeys.length > limit) {
+        var storedKey = storedKeys.pop();
+        setItem(expirationKey(storedKey.key), (EXPIRE_DATE).toString(EXPIRY_RADIX));
+      }
     },
 
     /**
